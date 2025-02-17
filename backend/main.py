@@ -9,7 +9,7 @@ from dotenv import load_dotenv, find_dotenv
 import aiofiles
 from uuid import UUID  # Add this import at the top
 
-app = FastAPI()
+app = FastAPI()dsfsdfsfsfasdadasd asd ad aad a
 
 # Configure CORS with more permissive settings
 app.add_middleware(
@@ -32,8 +32,8 @@ app.add_middleware(
 )
 
 # Initialize Supabase client
-supabase_url = "https://esffhaizaxsrnaoezssb.supabase.co"
-supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZmZoYWl6YXhzcm5hb2V6c3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3OTM5MzYsImV4cCI6MjA1NTM2OTkzNn0.LSBBRqzZa3YTM4fvZKBTpVfK-WabUiAu2GRJUlezMoA"
+
+
 
 client = supabase.create_client(supabase_url, supabase_key)
 
