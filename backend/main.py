@@ -30,6 +30,15 @@ app.add_middleware(
 )
 
 # Initialize Supabase client
+# Load environment variables
+load_dotenv(find_dotenv())
+
+# Get Supabase credentials from environment variables
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
+
+if not supabase_url or not supabase_key:
+    raise Exception("Missing required Supabase environment variables")
 
 
 
