@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 
 app = Flask(__name__)
-
+# test
 # Single, clear CORS configuration
 CORS(app, 
     origins=[
