@@ -15,15 +15,18 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://dietka.przemox49.usermd.net",  # Your production domain
-        "http://localhost:19006",  # Keep for local development
+        "https://dietka.przemox49.usermd.net",
+        "http://dietka.przemox49.usermd.net",
+        "http://localhost:19006",
         "http://localhost:19000",
         "exp://localhost:19000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
+    allow_origin_regex=None,
+    max_age=600  # Add cache for preflight requests
 )
 
 # Initialize Supabase client
