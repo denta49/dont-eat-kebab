@@ -10,22 +10,7 @@ from functools import wraps
 app = Flask(__name__)
 
 # Configure CORS
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://dietka.przemox49.usermd.net",
-            "http://dietka.przemox49.usermd.net",
-            "http://localhost:19006",
-            "http://localhost:19000",
-            "exp://localhost:19000",
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True,
-        "max_age": 600
-    }
-})
+CORS(app)
 
 # Load environment variables
 load_dotenv(find_dotenv())
