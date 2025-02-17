@@ -46,14 +46,59 @@ except Exception as e:
 
 # Add helper function to convert Supabase User to dict
 def serialize_user(user):
-    if not user:
-        return None
-    return {
-        "id": str(user.id),
-        "email": str(user.email),
-        "created_at": str(user.created_at) if hasattr(user, 'created_at') else None,
-        "updated_at": str(user.updated_at) if hasattr(user, 'updated_at') else None
-    }
+    try:
+        if not user:
+            print("Warning: Attempting to serialize None user")
+            return None
+            
+        print(f"Serializing user object of type: {type(user)}")
+        print(f"User object dir: {dir(user)}")  # Print available attributes
+        
+        # Try to safely get each attribute
+        user_dict = {}
+        
+        # ID
+        try:
+            user_dict["id"] = str(getattr(user, 'id', None))
+        except Exception as e:
+            print(f"Error getting user id: {str(e)}")
+            user_dict["id"] = None
+            
+        # Email    
+        try:
+            user_dict["email"] = str(getattr(user, 'email', None))
+        except Exception as e:
+            print(f"Error getting user email: {str(e)}")
+            user_dict["email"] = None
+            
+        # Created At
+        try:
+            created_at = getattr(user, 'created_at', None)
+            user_dict["created_at"] = str(created_at) if created_at else None
+        except Exception as e:
+            print(f"Error getting created_at: {str(e)}")
+            user_dict["created_at"] = None
+            
+        # Updated At
+        try:
+            updated_at = getattr(user, 'updated_at', None)
+            user_dict["updated_at"] = str(updated_at) if updated_at else None
+        except Exception as e:
+            print(f"Error getting updated_at: {str(e)}")
+            user_dict["updated_at"] = None
+            
+        print(f"Successfully serialized user: {user_dict}")
+        return user_dict
+        
+    except Exception as e:
+        print(f"Error in serialize_user: {str(e)}")
+        # Return a minimal valid user object
+        return {
+            "id": "unknown",
+            "email": "unknown",
+            "created_at": None,
+            "updated_at": None
+        }
 
 # Add helper function to convert Supabase Session to dict
 def serialize_session(session):
@@ -106,11 +151,26 @@ def login():
             "password": data["password"]
         })
         
-        user_data = serialize_user(response.user)
-        session_data = serialize_session(response.session)
+        print(f"Auth response type: {type(response)}")
+        print(f"Auth response dir: {dir(response)}")
         
-        if not user_data or not session_data:
-            return jsonify({"detail": "Invalid response from authentication service"}), 500
+        # Safely get user and session data
+        user_data = serialize_user(response.user)
+        
+        if not user_data:
+            print("Failed to serialize user data")
+            return jsonify({"detail": "Invalid user data received"}), 500
+            
+        try:
+            session_data = {
+                "access_token": str(response.session.access_token),
+                "refresh_token": str(response.session.refresh_token)
+            }
+        except Exception as e:
+            print(f"Error serializing session: {str(e)}")
+            return jsonify({"detail": "Invalid session data"}), 500
+            
+        print(f"Final response data: {{'user': {user_data}, 'session': {session_data}}}")
             
         return jsonify({
             "access_token": session_data["access_token"],
@@ -121,6 +181,7 @@ def login():
     except Exception as e:
         print(f"Login error: {str(e)}")
         print(f"Error type: {type(e)}")
+        print(f"Error dir: {dir(e)}")
         return jsonify({"detail": str(e)}), 401
 
 @app.route("/api/auth/register", methods=["POST"])
