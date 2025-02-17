@@ -69,6 +69,7 @@ export const api = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
     
@@ -86,7 +87,6 @@ export const api = {
       user_id: data.user.id
     });
     
-    console.log('Session after login:', this.currentSession); // Debug log
     return data;
   },
 
