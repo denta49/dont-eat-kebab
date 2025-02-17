@@ -9,7 +9,7 @@ from dotenv import load_dotenv, find_dotenv
 import aiofiles
 from uuid import UUID  # Add this import at the top
 
-app = FastAPI()dsfsdfsfsfasdadasd asd ad aad a
+app = FastAPI()
 
 # Configure CORS with more permissive settings
 app.add_middleware(
