@@ -11,7 +11,15 @@ app = Flask(__name__)
 
 # Single, clear CORS configuration
 CORS(app, 
-    origins=["https://dietka.przemox49.usermd.net"],
+    origins=[
+        "https://dietka.przemox49.usermd.net",
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",  # Added local IP
+        "http://localhost:5000",    # Added Flask dev server
+        "http://127.0.0.1:5000",    # Added Flask dev server IP
+        "http://localhost:19000",
+        "exp://localhost:19000"
+    ],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
     supports_credentials=True,
@@ -36,6 +44,26 @@ except Exception as e:
     print(f"Error initializing Supabase client: {str(e)}")
     raise
 
+# Add helper function to convert Supabase User to dict
+def serialize_user(user):
+    if not user:
+        return None
+    return {
+        "id": str(user.id),
+        "email": str(user.email),
+        "created_at": str(user.created_at) if hasattr(user, 'created_at') else None,
+        "updated_at": str(user.updated_at) if hasattr(user, 'updated_at') else None
+    }
+
+# Add helper function to convert Supabase Session to dict
+def serialize_session(session):
+    if not session:
+        return None
+    return {
+        "access_token": str(session.access_token),
+        "refresh_token": str(session.refresh_token)
+    }
+
 # Authentication decorator
 def require_auth(f):
     @wraps(f)
@@ -50,15 +78,17 @@ def require_auth(f):
             
             if not user_response.user:
                 return jsonify({"detail": "Invalid or expired token"}), 401
-                
-            return f(user_response.user, *args, **kwargs)
+            
+            user_dict = serialize_user(user_response.user)
+            return f(user_dict, *args, **kwargs)
             
         except Exception as e:
+            print(f"Auth error: {str(e)}")
             return jsonify({"detail": f"Invalid authentication credentials: {str(e)}"}), 401
             
     return decorated
 
-@app.route("/")
+@app.route("/api/")
 def home():
     return jsonify({"message": "Don't Eat Kebab API"})
 
@@ -69,16 +99,28 @@ def login():
         
     try:
         data = request.get_json()
+        print(f"Login attempt for email: {data.get('email')}")
+        
         response = client.auth.sign_in_with_password({
             "email": data["email"],
             "password": data["password"]
         })
+        
+        user_data = serialize_user(response.user)
+        session_data = serialize_session(response.session)
+        
+        if not user_data or not session_data:
+            return jsonify({"detail": "Invalid response from authentication service"}), 500
+            
         return jsonify({
-            "access_token": response.session.access_token,
-            "refresh_token": response.session.refresh_token,
-            "user": response.user
+            "access_token": session_data["access_token"],
+            "refresh_token": session_data["refresh_token"],
+            "user": user_data
         })
+            
     except Exception as e:
+        print(f"Login error: {str(e)}")
+        print(f"Error type: {type(e)}")
         return jsonify({"detail": str(e)}), 401
 
 @app.route("/api/auth/register", methods=["POST"])
@@ -89,18 +131,22 @@ def register():
             "email": data["email"],
             "password": data["password"]
         })
+        
+        user_data = serialize_user(response.user)
+        
         return jsonify({
             "message": "Registration successful",
-            "user": response.user
+            "user": user_data
         })
     except Exception as e:
+        print(f"Register error: {str(e)}")
         return jsonify({"detail": str(e)}), 400
 
 @app.route("/api/profile/<user_id>", methods=["GET"])
 @require_auth
 def get_profile(current_user, user_id):
     try:
-        if user_id != current_user.id:
+        if user_id != current_user['id']:
             return jsonify({"detail": "Not authorized to view this profile"}), 403
 
         response = client.table('profiles').select("*").eq('id', user_id).single().execute()
@@ -109,8 +155,8 @@ def get_profile(current_user, user_id):
             # Create profile if it doesn't exist
             data = {
                 "id": user_id,
-                "email": current_user.email,
-                "username": current_user.email.split('@')[0],
+                "email": current_user['email'],
+                "username": current_user['email'].split('@')[0],
                 "full_name": "",
                 "avatar_url": None,
                 "updated_at": datetime.utcnow().isoformat()
@@ -120,7 +166,7 @@ def get_profile(current_user, user_id):
                 return jsonify({"detail": "Failed to create profile"}), 404
             
         profile_data = response.data[0] if isinstance(response.data, list) else response.data
-        profile_data['email'] = current_user.email
+        profile_data['email'] = current_user['email']
         
         return jsonify(profile_data)
         
@@ -149,7 +195,7 @@ def update_profile(current_user, user_id):
 @require_auth
 def upload_avatar(current_user, user_id):
     try:
-        if user_id != current_user.id:
+        if user_id != current_user['id']:
             return jsonify({"detail": "Not authorized to update this profile"}), 403
 
         if 'file' not in request.files:
@@ -217,7 +263,7 @@ def log_weight(current_user):
             return jsonify({"detail": "Weight must be between 0 and 1000 kg"}), 400
 
         weight_data = {
-            "user_id": current_user.id,
+            "user_id": current_user['id'],
             "weight": weight,
             "log_date": log_date.isoformat()
         }
@@ -232,6 +278,7 @@ def log_weight(current_user):
         return jsonify(response.data[0])
         
     except Exception as e:
+        print(f"Weight logging error: {str(e)}")  # Add debug logging
         return jsonify({"detail": str(e)}), 500
 
 @app.route("/api/weight/<user_id>", methods=["GET"])
@@ -301,11 +348,24 @@ def after_request(response):
     print(f"Request method: {request.method}")
     print(f"Request headers: {dict(request.headers)}")
     
-    # Ensure CORS headers are set
-    response.headers['Access-Control-Allow-Origin'] = 'https://dietka.przemox49.usermd.net'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    # Get the origin from the request
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        "https://dietka.przemox49.usermd.net",
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",  # Added local IP
+        "http://localhost:5000",    # Added Flask dev server
+        "http://127.0.0.1:5000",    # Added Flask dev server IP
+        "http://localhost:19000",
+        "exp://localhost:19000"
+    ]
+    
+    # Set CORS headers based on the origin
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
     
     # For preflight requests
     if request.method == 'OPTIONS':
@@ -315,4 +375,5 @@ def after_request(response):
     return response
 
 if __name__ == "__main__":
-    app.run(debug=True) 
+    # Change the host to allow external access
+    app.run(host='0.0.0.0', port=5000, debug=True) 

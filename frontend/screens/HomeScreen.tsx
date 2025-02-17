@@ -349,16 +349,6 @@ export default function HomeScreen({ navigation }: any) {
             />
           </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-              maximumDate={new Date()}
-            />
-          )}
-
           {/* Weight Input */}
           <View style={styles.weightInputContainer}>
             <TextInput
@@ -399,7 +389,7 @@ export default function HomeScreen({ navigation }: any) {
               contentContainerStyle={styles.list}
               scrollEnabled={false}  // Disable scroll since we're in ScrollView
             />
-            <ComparisonChart users={users} />
+            {/* <ComparisonChart users={users} /> */}
           </>
         )}
       </ScrollView>

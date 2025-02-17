@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = "https://api.dietka.przemox49.usermd.net/api"
 
 type Session = {
   access_token: string;
@@ -57,7 +57,7 @@ export const api = {
     };
   },
 
-  getAuthHeader() {
+  getAuthHeader(): Record<string, string> {
     console.log('Getting auth header from session:', currentSession); // Debug log
     return currentSession ? { 'Authorization': `Bearer ${currentSession.access_token}` } : {};
   },
