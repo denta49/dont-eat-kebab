@@ -30,13 +30,18 @@ CORS(app, resources={
 load_dotenv(find_dotenv())
 
 # Initialize Supabase client
-supabase_url = os.getenv('SUPABASE_URL')
-supabase_key = os.getenv('SUPABASE_KEY')
+supabase_url = "https://esffhaizaxsrnaoezssb.supabase.co"  # No trailing slash
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZmZoYWl6YXhzcm5hb2V6c3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3OTM5MzYsImV4cCI6MjA1NTM2OTkzNn0.LSBBRqzZa3YTM4fvZKBTpVfK-WabUiAu2GRJUlezMoA"
 
-if not supabase_url or not supabase_key:
-    raise Exception("Missing required Supabase environment variables")
+# Add debug logging
+print(f"Initializing Supabase with URL: {supabase_url}")
 
-client = supabase.create_client(supabase_url, supabase_key)
+try:
+    client = supabase.create_client(supabase_url, supabase_key)
+    print("Supabase client initialized successfully")
+except Exception as e:
+    print(f"Error initializing Supabase client: {str(e)}")
+    raise
 
 # Authentication decorator
 def require_auth(f):
